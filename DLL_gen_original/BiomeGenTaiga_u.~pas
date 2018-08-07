@@ -1,0 +1,21 @@
+unit BiomeGenTaiga_u;
+
+interface
+
+uses BiomeGenBase_u;
+
+type BiomeGenTaiga=class(BiomeGenBase)
+     public
+       constructor Create(i:integer); override;
+     end;
+
+implementation
+
+constructor BiomeGenTaiga.Create(i:integer);
+begin
+  inherited Create(i);
+  Decorator.treesPerChunk:=10;
+  Decorator.grassPerChunk:=1;
+end;
+
+end.

@@ -1,0 +1,21 @@
+unit BiomeGenMushroomIsland_u;
+
+interface
+
+uses BiomeGenBase_u;
+
+type BiomeGenMushroomIsland=class(BiomeGenBase)
+     public
+       constructor Create(i:integer); override;
+     end;
+
+implementation
+
+constructor BiomeGenMushroomIsland.Create(i:integer);
+begin
+  inherited Create(i);
+  topBlock:=110;  //mycelium
+  //todo: dopisat' biome decorator
+end;
+
+end.
