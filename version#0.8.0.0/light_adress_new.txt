@@ -1,0 +1,5 @@
+byte result = mass[y/2+(z*64+(x*1024))];
+if (y mod 2 == 1)
+{result = result >> 4 & 0x0f;}
+else
+{result = result & 0x0f;}
