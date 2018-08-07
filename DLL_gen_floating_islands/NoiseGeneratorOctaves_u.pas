@@ -1,0 +1,76 @@
+unit NoiseGeneratorOctaves_u;
+
+interface
+
+uses RandomMCT, NoiseGenerator_u, NoiseGeneratorPerlin_u, generation;
+
+type NoiseGeneratorOctaves=class(NoiseGenerator)
+     private
+       generatorCollection:ar_NoiseGeneratorPerlin;
+       octaves:integer;
+     public
+       constructor Create(rand:rnd; i:integer);
+       destructor Destroy; override;
+       function generateNoiseOctaves(ad:ar_double; i,j,k,l,i1,j1:integer; d,d1,d2:double):ar_double;
+       function func_4109_a(ad:ar_double; i,j,k,l:integer; d,d1,d2:double):ar_double;
+     end;
+
+implementation
+
+uses MathHelper_u;
+
+constructor NoiseGeneratorOctaves.Create(rand:rnd; i:integer);
+var j:integer;
+begin
+  octaves:=i;
+  setlength(generatorCollection,i);
+  for j:=0 to i-1 do
+    generatorCollection[j]:=NoiseGeneratorPerlin.Create(rand);
+end;
+
+destructor NoiseGeneratorOctaves.Destroy;
+var i:integer;
+begin
+  for i:=0 to length(generatorCollection)-1 do
+    generatorCollection[i].Free;
+  setlength(generatorCollection,0);
+  inherited;
+end;
+
+function NoiseGeneratorOctaves.generateNoiseOctaves(ad:ar_double; i,j,k,l,i1,j1:integer; d,d1,d2:double):ar_double;
+var k1,l1:integer;
+d3,d4,d5,d6:double;
+l2,l3:int64;
+begin
+  if length(ad)=0 then setlength(ad,l*i1*j1)
+  else
+    for k1:=0 to length(ad)-1 do
+      ad[k1]:=0;
+
+  d3:=1;
+  for l1:=0 to octaves-1 do
+  begin
+    d4:=i * d3 * d;
+    d5:=j * d3 * d1;
+    d6:=k * d3 * d2;
+    l2:=MathHelper_u.floor_double_long(d4);
+    l3:=MathHelper_u.floor_double_long(d6);
+    d4:=d4-l2;
+    d6:=d6-l3;
+    l2:=l2 mod $1000000;
+    l3:=l3 mod $1000000;
+    d4:=d4+l2;
+    d6:=d6+l3;
+    generatorCollection[l1].func_805_a(ad, d4, d5, d6, l, i1, j1, d * d3, d1 * d3, d2 * d3, d3);
+    d3:=d3/2;
+  end;
+
+  result:=ad;
+end;
+
+function NoiseGeneratorOctaves.func_4109_a(ad:ar_double; i,j,k,l:integer; d,d1,d2:double):ar_double;
+begin
+  result:=generateNoiseOctaves(ad, i, 10, j, k, 1, l, d, 1, d1);
+end;
+
+end.
