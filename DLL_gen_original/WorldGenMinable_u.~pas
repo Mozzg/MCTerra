@@ -1,0 +1,38 @@
+unit WorldGenMinable_u;
+
+interface
+
+uses WorldGenerator_u, generation, RandomMCT;
+
+type WorldGenMinable=class(WorldGenerator)
+     private
+       minableBlockId,numberOfBlocks:integer;
+     public
+       constructor Create(i,j:integer);
+       function generate(xreg,yreg:integer; map:region; rand:rnd; i,j,k:integer):boolean; override;
+     end;
+
+implementation
+
+uses MathHelper_u;
+
+constructor WorldGenMinable.Create(i,j:integer);
+begin
+  minableBlockId:=i;
+  numberOfBlocks:=j;
+end;
+
+function WorldGenMinable.generate(xreg,yreg:integer; map:region; rand:rnd; i,j,k:integer):boolean;
+var f,d,d1,d2,d3,d4,d5:double;
+begin
+  f:=rand.nextFloat() * 3.141593;
+  d:=(i + 8) + (MathHelper_u.math_sin(f) * numberOfBlocks) / 8;
+  d1:=(i + 8) - (MathHelper_u.math_sin(f) * numberOfBlocks) / 8;
+  d2:=(k + 8) + (MathHelper_u.math_cos(f) * numberOfBlocks) / 8;
+  d3:=(k + 8) - (MathHelper_u.math_cos(f) * numberOfBlocks) / 8;
+  d4:=(j + rand.nextInt(3)) - 2;
+  d5:=(j + rand.nextInt(3)) - 2;
+  
+end;
+
+end.

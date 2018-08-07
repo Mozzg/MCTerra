@@ -1,0 +1,40 @@
+unit WorldGenCactus_u;
+
+interface
+
+uses WorldGenerator_u, generation, RandomMCT;
+
+type WorldGenCactus=class(WorldGenerator)
+     public
+       function generate(xreg,yreg:integer; map:region; rand:rnd; i,j,k:integer):boolean; override;
+     end;
+
+implementation
+
+function WorldGenCactus.generate(xreg,yreg:integer; map:region; rand:rnd; i,j,k:integer):boolean;
+var l,i1,j1,k1,l1,i2,t,t1,t2,t3,t4:integer;
+begin
+  for l:=0 to 9 do
+  begin
+    i1:=(i + rand.nextInt(8)) - rand.nextInt(8);
+    j1:=(j + rand.nextInt(4)) - rand.nextInt(4);
+    k1:=(k + rand.nextInt(8)) - rand.nextInt(8);
+    if (get_block_id(map,xreg,yreg,i1, j1, k1)<>0) then continue;
+    l1:=1 + rand.nextInt(rand.nextInt(3) + 1);
+    for i2:=0 to l1-1 do
+    begin
+      t:=get_block_id(map,xreg,yreg,i1, j1 + i2 - 1, k1);
+      t1:=get_block_id(map,xreg,yreg,i1-1, j1 + i2, k1);
+      t2:=get_block_id(map,xreg,yreg,i1+1, j1 + i2, k1);
+      t3:=get_block_id(map,xreg,yreg,i1, j1 + i2, k1-1);
+      t4:=get_block_id(map,xreg,yreg,i1, j1 + i2, k1+1);
+
+      if ((t=81)or(t=12))and(not(t1 in solid_bl))and(not(t2 in solid_bl))and(not(t3 in solid_bl))and(not(t4 in solid_bl))then
+        set_block_id(map,xreg,yreg,i1, j1 + i2, k1, 81);
+    end;
+  end;
+
+  result:=true;
+end;
+
+end.

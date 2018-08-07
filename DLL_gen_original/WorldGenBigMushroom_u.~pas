@@ -1,0 +1,71 @@
+unit WorldGenBigMushroom_u;
+
+interface
+
+uses WorldGenerator_u, generation, RandomMCT;
+
+type WorldGenBigMushroom=class(WorldGenerator)
+     private
+       mushroomType:integer;
+     public
+       constructor Create(i:integer); overload;
+       constructor Create; overload;
+       function generate(xreg,yreg:integer; map:region; rand:rnd; i,j,k:integer):boolean; override;
+     end;
+
+implementation
+
+constructor WorldGenBigMushroom.Create(i:integer);
+begin
+  mushroomType:=i;
+end;
+
+constructor WorldGenBigMushroom.Create;
+begin
+  mushroomType:=-1;
+end;
+
+function WorldGenBigMushroom.generate(xreg,yreg:integer; map:region; rand:rnd; i,j,k:integer):boolean;
+var l,i1,j1,byte0,i2,l2,k3:integer;
+flag:boolean;
+begin
+  l:=rand.nextInt(2);
+  if (mushroomType >= 0) then
+    l:=mushroomType;
+  i1:=rand.nextInt(3) + 4;
+  flag:=true;
+  if (j < 1)or(j + i1 + 1 > 128) then
+  begin
+    result:=false;
+    exit;
+  end;
+  for j1:=j to j+1+i1 do
+  begin
+    byte0:=3;
+    if (j1 = j)then byte0:=0;
+
+    for i2:=i-byte0 to i+byte0 do
+    begin
+      if flag=false then break;
+      for l2:=k-byte0 to k+byte0 do
+      begin
+        if (j1 >= 0)and(j1 < 128) then
+        begin
+          k3:=get_block_id(map,xreg,yreg,i2, j1, l2);
+          if (k3 <> 0)and(k3 <> 18)then flag:=false;
+        end
+        else flag:=false;
+      end;
+    end;
+  end;
+
+  if not(flag) then
+  begin
+    result:=false;
+    exit;
+  end;
+
+  
+end;
+
+end.

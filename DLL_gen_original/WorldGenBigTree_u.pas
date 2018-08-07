@@ -1,0 +1,476 @@
+unit WorldGenBigTree_u;
+
+interface
+
+uses WorldGenerator_u, generation, RandomMCT;
+
+type WorldGenBigTree=class(WorldGenerator)
+     private
+       otherCoordPairs:array[0..5] of byte;
+       rand1:rnd;
+       basePos:array[0..2] of byte;
+       heightLimit,height,trunkSize,heightLimitLimit,leafDistanceLimit:integer;
+       leafNodes:array of ar_int;
+       heightAttenuation,field_875_h,field_874_i,field_873_j,
+       field_872_k:double;
+     public
+       constructor Create;
+       destructor Destroy;
+       procedure generateLeafNodeList(xreg,yreg:integer; map:region);
+       procedure func_523_a(xreg,yreg:integer; map:region; i,j,k:integer; f:double; byte0,l:integer);
+       function func_528_a(i:integer):double;
+       function func_526_b(i:integer):double;
+       procedure generateLeafNode(xreg,yreg:integer; map:region; i,j,k:integer);
+       procedure placeBlockLine(xreg,yreg:integer; map:region; ai,ai1:array of integer; i:integer);
+       procedure generateLeaves(xreg,yreg:integer; map:region);
+       function leafNodeNeedsBase(i:integer):boolean;
+       procedure generateTrunk(xreg,yreg:integer; map:region);
+       procedure generateLeafNodeBases(xreg,yreg:integer; map:region);
+       function checkBlockLine(xreg,yreg:integer; map:region; ai,ai1:array of integer):integer;
+       function validTreeLocation(xreg,yreg:integer; map:region):boolean;
+       procedure func_517_a(d,d1,d2:double); override;
+       function generate(xreg,yreg:integer; map:region; rand:rnd; i,j,k:integer):boolean; override;
+     end;
+
+implementation
+
+uses Math, MathHelper_u;
+
+constructor WorldGenBigTree.Create;
+begin
+  rand1:=rnd.create;
+  heightLimit:=0;
+  heightAttenuation:=0.61799999999999999;
+  field_875_h:=1;
+  field_874_i:=0.38100000000000001;
+  field_873_j:=1;
+  field_872_k:=1;
+  trunkSize:=1;
+  heightLimitLimit:=12;
+  leafDistanceLimit:=4;
+
+  otherCoordPairs[0]:=2;
+  otherCoordPairs[1]:=0;
+  otherCoordPairs[2]:=0;
+  otherCoordPairs[3]:=1;
+  otherCoordPairs[4]:=2;
+  otherCoordPairs[5]:=1;
+
+  basePos[0]:=0;
+  basePos[1]:=0;
+  basePos[2]:=0;
+end;
+
+destructor WorldGenBigTree.Destroy;
+var i:integer;
+begin
+  for i:=0 to length(leafNodes)-1 do
+    setlength(leafNodes[i],0);
+  setlength(leafNodes,0);
+  rand1.Free;
+  inherited;
+end;
+
+procedure WorldGenBigTree.generateLeafNodeList(xreg,yreg:integer; map:region);
+var i,t,t1,j,k,l,i1,j1,k1,l1:integer;
+f,d,d1,d2,d3,d4:double;
+ai:array of ar_int;
+ai1,ai2,ai3:array[0..2] of integer;
+begin
+  height:=trunc(heightLimit * heightAttenuation);
+  if (height >= heightLimit)then
+    height:=heightLimit - 1;
+  i:=trunc(1.3819999999999999 + power((field_872_k * heightLimit) / 13, 2));
+  if (i < 1) then i:=1;
+
+  setlength(ai,i * heightLimit);
+  for t:=0 to length(ai)-1 do
+    setlength(ai[t],4);
+
+  j:=(basePos[1] + heightLimit) - leafDistanceLimit;
+  k:=1;
+  l:=basePos[1] + height;
+  i1:=j - basePos[1];
+  ai[0][0]:=basePos[0];
+  ai[0][1]:=j;
+  ai[0][2]:=basePos[2];
+  ai[0][3]:=l;
+  dec(j);
+
+  while (i1 >= 0) do
+  begin
+    j1:=0;
+    f:=func_528_a(i1);
+    if (f < 0) then
+    begin
+      dec(j);
+      dec(i1);
+    end
+    else
+    begin
+      d:=0.5;
+      while j1<i do
+      begin
+        d1:=field_873_j * (f * (rand1.nextFloat() + 0.32800000000000001));
+        d2:=rand1.nextFloat() * 2 * 3.1415899999999999;
+        k1:=MathHelper_u.floor_double(d1 * sin(d2) + basePos[0] + d);
+        l1:=MathHelper_u.floor_double(d1 * cos(d2) + basePos[2] + d);
+        ai1[0]:=k1;
+        ai1[1]:=j;
+        ai1[2]:=l1;
+        ai2[0]:=k1;
+        ai2[1]:=j + leafDistanceLimit;
+        ai2[2]:=l1;
+        if (checkBlockLine(xreg,yreg,map,ai1, ai2) <> -1) then
+        begin
+          inc(j1);
+          continue;
+        end;
+        for t:=0 to 2 do
+          ai3[t]:=basePos[t];
+        d3:=sqrt(power(abs(basePos[0] - ai1[0]), 2) + power(abs(basePos[2] - ai1[2]), 2));
+        d4:=d3 * field_874_i;
+        if (ai1[1] - d4 > l)then ai3[1]:=l
+        else ai3[1]:=trunc(ai1[1] - d4);
+        if (checkBlockLine(xreg,yreg,map,ai3, ai1) = -1)then
+        begin
+          ai[k][0]:=k1;
+          ai[k][1]:=j;
+          ai[k][2]:=l1;
+          ai[k][3]:=ai3[1];
+          inc(k);
+        end;
+        inc(j1);
+      end;
+
+      dec(j);
+      dec(i1);
+    end;
+  end;
+
+  setlength(leafNodes,k);
+  for t:=0 to length(leafNodes)-1 do
+    setlength(leafNodes[t],4);
+
+  for t:=0 to k-1 do
+    for t1:=0 to 3 do
+      leafNodes[t][t1]:=ai[t][t1];
+
+  for t:=0 to length(ai)-1 do
+    setlength(ai[t],0);
+  setlength(ai,0);
+end;
+
+procedure WorldGenBigTree.func_523_a(xreg,yreg:integer; map:region; i,j,k:integer; f:double; byte0,l:integer);
+var i1,byte1,byte2,j1,k1,l1,i2:integer;
+d:double;
+ai,ai1:array[0..2] of integer;
+begin
+  i1:=trunc(f + 0.61799999999999999);
+  byte1:=otherCoordPairs[byte0];
+  byte2:=otherCoordPairs[byte0 + 3];
+  ai[0]:=i;
+  ai[1]:=j;
+  ai[2]:=k;
+  ai1[0]:=0;
+  ai1[1]:=0;
+  ai1[2]:=0;
+  j1:=-i1;
+  k1:=-i1;
+  ai1[byte0]:=ai[byte0];
+  while j1<=i1 do
+  begin
+    ai1[byte1]:=ai[byte1] + j1;
+    l1:=-i1;
+    while l1<=i1 do
+    begin
+      d:=sqrt(power(abs(j1) + 0.5, 2) + power(abs(l1) + 0.5, 2));
+      if (d > f) then inc(l1)
+      else
+      begin
+        ai1[byte2]:=ai[byte2] + l1;
+        i2:=get_block_id(map,xreg,yreg,ai1[0], ai1[1], ai1[2]);
+        if (i2 <> 0)and(i2 <> 18)then inc(l1)
+        else
+        begin
+          set_block_id_data(map,xreg,yreg,ai1[0], ai1[1], ai1[2], l, 0);
+          inc(l1);
+        end;
+      end;
+    end;
+    inc(j1);
+  end;
+end;
+
+function WorldGenBigTree.func_528_a(i:integer):double;
+var f,f1,f2:double;
+begin
+  if (i < heightLimit * 0.29999999999999999)then
+  begin
+    result:=-1.618;
+    exit;
+  end;
+  f:=heightLimit / 2;
+  f1:=heightLimit / 2 - i;
+  if (f1 = 0)then f2:=f
+  else if (abs(f1) >= f)then f2:=0
+  else f2:=sqrt(power(abs(f), 2) - power(abs(f1), 2));
+  f2:=f2*0.5;
+  result:=f2;
+end;
+
+function WorldGenBigTree.func_526_b(i:integer):double;
+begin
+  if (i < 0)or(i >= leafDistanceLimit)then
+  begin
+    result:=-1;
+    exit;
+  end;
+  if (i <> 0)and(i <> leafDistanceLimit - 1)then result:=3
+  else result:=2;                                
+end;
+
+procedure WorldGenBigTree.generateLeafNode(xreg,yreg:integer; map:region; i,j,k:integer);
+var l,i1:integer;
+f:double;
+begin
+  //l:=j;
+  //for i1:=j+leafDistanceLimit to i1-1 do
+  i1:=j + leafDistanceLimit;
+  for l:=j to i1-1 do
+  begin
+    f:=func_526_b(l - j);
+    func_523_a(xreg,yreg,map,i, l, k, f, 1, 18);
+  end;
+end;
+
+procedure WorldGenBigTree.placeBlockLine(xreg,yreg:integer; map:region; ai,ai1:array of integer; i:integer);
+var ai2,ai3:array[0..2] of integer;
+byte0,j,byte1,byte2,byte3,k,l:integer;
+d,d1:double;
+begin
+  ai2[0]:=0;
+  ai2[1]:=0;
+  ai2[2]:=0;
+  byte0:=0;
+  j:=0;
+  while byte0<3 do
+  begin
+    ai2[byte0]:=ai1[byte0] - ai[byte0];
+    if (abs(ai2[byte0]) > abs(ai2[j]))then j:=byte0; 
+    inc(byte0);
+  end;
+
+  if (ai2[j] = 0) then exit;
+  byte1:=otherCoordPairs[j];
+  byte2:=otherCoordPairs[j + 3];
+  if (ai2[j] > 0) then byte3:=1
+  else byte3:=-1;
+  d:=ai2[byte1] / ai2[j];
+  d1:=ai2[byte2] / ai2[j];
+  ai3[0]:=0;
+  ai3[1]:=0;
+  ai3[2]:=0;
+  k:=0;
+  l:=ai2[j] + byte3;
+  while k<>l do
+  begin
+    ai3[j]:=MathHelper_u.floor_double((ai[j] + k) + 0.5);
+    ai3[byte1]:=MathHelper_u.floor_double(ai[byte1] + k * d + 0.5);
+    ai3[byte2]:=MathHelper_u.floor_double(ai[byte2] + k * d1 + 0.5);
+    set_block_id_data(map,xreg,yreg,ai3[0], ai3[1], ai3[2], i, 0);
+    inc(k,byte3);
+  end;
+end;
+
+procedure WorldGenBigTree.generateLeaves(xreg,yreg:integer; map:region);
+var i,j,k,l,i1:integer;
+begin
+  i:=0;
+  j:=length(leafNodes);
+  while i<j do
+  begin
+    k:=leafNodes[i][0];
+    l:=leafNodes[i][1];
+    i1:=leafNodes[i][2];
+    generateLeafNode(xreg,yreg,map,k, l, i1);
+    inc(i);
+  end;
+end;
+
+function WorldGenBigTree.leafNodeNeedsBase(i:integer):boolean;
+begin
+  //return (double)i >= (double)heightLimit * 0.20000000000000001D;
+  result:=i >= heightLimit * 0.20000000000000001;
+end;
+
+procedure WorldGenBigTree.generateTrunk(xreg,yreg:integer; map:region);
+var i,j,k,l:integer;
+ai,ai1:array[0..2]of integer;
+begin
+  i:=basePos[0];
+  j:=basePos[1];
+  k:=basePos[1] + height;
+  l:=basePos[2];
+  ai[0]:=i;
+  ai[1]:=j;
+  ai[2]:=l;
+  ai1[0]:=i;
+  ai1[1]:=k;
+  ai1[2]:=l;
+  placeBlockLine(xreg,yreg,map,ai, ai1, 17);
+  if (trunkSize = 2)then
+  begin
+    inc(ai[0]);
+    inc(ai1[0]);
+    placeBlockLine(xreg,yreg,map,ai, ai1, 17);
+    inc(ai[2]);
+    inc(ai1[2]);
+    placeBlockLine(xreg,yreg,map,ai, ai1, 17);
+    dec(ai[0]);
+    dec(ai1[0]);
+    placeBlockLine(xreg,yreg,map,ai, ai1, 17);
+  end;
+end;
+
+procedure WorldGenBigTree.generateLeafNodeBases(xreg,yreg:integer; map:region);
+var i,j,k:integer;
+ai,ai2:array[0..2]of integer;
+ai1:array[0..3]of integer;
+begin
+  i:=0;
+  j:=length(leafNodes);
+  ai[0]:=basePos[0];
+  ai[1]:=basePos[1];
+  ai[2]:=basePos[2];
+  while i<j do
+  begin
+    ai1[0]:=leafNodes[i][0];
+    ai1[1]:=leafNodes[i][1];
+    ai1[2]:=leafNodes[i][2];
+    ai1[3]:=leafNodes[i][3];
+    ai2[0]:=ai1[0];
+    ai2[1]:=ai1[1];
+    ai2[2]:=ai1[2];
+    ai[1]:=ai1[3];
+    k:=ai[1] - basePos[1];
+    if (leafNodeNeedsBase(k))then
+      placeBlockLine(xreg,yreg,map,ai, ai2, 17);
+    inc(i);
+  end;
+end;
+
+function WorldGenBigTree.checkBlockLine(xreg,yreg:integer; map:region; ai,ai1:array of integer):integer;
+var ai2,ai3:array[0..2]of integer;
+byte0,i,byte1,byte2,byte3,j,k,l:integer;
+d,d1:double;
+begin
+  ai2[0]:=0;
+  ai2[1]:=0;
+  ai2[2]:=0;
+  byte0:=0;
+  i:=0;
+  while byte0<3 do
+  begin
+    ai2[byte0]:=ai1[byte0] - ai[byte0];
+    if (abs(ai2[byte0]) > abs(ai2[i]))then
+      i:=byte0;
+    inc(byte0);
+  end;
+
+  if (ai2[i] = 0)then
+  begin
+    result:=-1;
+    exit;
+  end;
+  byte1:=otherCoordPairs[i];
+  byte2:=otherCoordPairs[i + 3];
+  if (ai2[i] > 0) then byte3:=1
+  else byte3:=-1;
+  d:=ai2[byte1] / ai2[i];
+  d1:=ai2[byte2] / ai2[i];
+  ai3[0]:=0;
+  ai3[1]:=0;
+  ai3[2]:=0;
+  j:=0;
+  k:=ai2[i] + byte3;
+  repeat
+    if (j = k) then break;
+    ai3[i]:=ai[i] + j;
+    ai3[byte1]:=MathHelper_u.floor_double(ai[byte1] + j * d);
+    ai3[byte2]:=MathHelper_u.floor_double(ai[byte2] + j * d1);
+    l:=get_block_id(map,xreg,yreg,ai3[0], ai3[1], ai3[2]);
+    if (l <> 0)and(l <> 18)then break;
+    inc(j,byte3);
+  until false;
+  if (j = k)then
+    result:=-1
+  else
+    result:=abs(j);
+end;
+
+function WorldGenBigTree.validTreeLocation(xreg,yreg:integer; map:region):boolean;
+var ai,ai1:array[0..2]of integer;
+i,j:integer;
+begin
+  ai[0]:=basePos[0];
+  ai[1]:=basePos[1];
+  ai[2]:=basePos[2];
+
+  ai1[0]:=basePos[0];
+  ai1[1]:=(basePos[1] + heightLimit) - 1;
+  ai1[2]:=basePos[2];
+
+  i:=get_block_id(map,xreg,yreg,basePos[0], basePos[1] - 1, basePos[2]);
+  if (i <> 2)and(i <> 3) then
+  begin
+    result:=false;
+    exit;
+  end;
+  j:=checkBlockLine(xreg,yreg,map,ai, ai1);
+  if (j = -1)then
+  begin
+    result:=true;
+    exit;
+  end;
+  if (j < 6) then
+    result:=false
+  else
+  begin
+    heightLimit:=j;
+    result:=true;
+  end;
+end;
+
+procedure WorldGenBigTree.func_517_a(d,d1,d2:double);
+begin
+  heightLimitLimit:=trunc(d * 12);
+  if (d > 0.5)then
+    leafDistanceLimit:=5;
+  field_873_j:=d1;
+  field_872_k:=d2;
+end;
+
+function WorldGenBigTree.generate(xreg,yreg:integer; map:region; rand:rnd; i,j,k:integer):boolean;
+var l:int64;
+begin
+  l:=rand.nextLong();
+  rand1.setSeed(l);
+  basePos[0]:=i;
+  basePos[1]:=j;
+  basePos[2]:=k;
+  if (heightLimit = 0) then
+    heightLimit:=5 + rand1.nextInt(heightLimitLimit);
+  if (not(validTreeLocation(xreg,yreg,map)))then
+    result:=false
+  else
+  begin
+    generateLeafNodeList(xreg,yreg,map);
+    generateLeaves(xreg,yreg,map);
+    generateTrunk(xreg,yreg,map);
+    generateLeafNodeBases(xreg,yreg,map);
+    result:=true;
+  end;
+end;
+
+end.

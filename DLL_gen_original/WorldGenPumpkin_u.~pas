@@ -1,0 +1,18 @@
+unit WorldGenPumpkin_u;
+
+interface
+
+uses WorldGenerator_u, generation, RandomMCT;
+
+type WorldGenPumpkin=class(WorldGenerator)
+     public
+       function generate(xreg,yreg:integer; map:region; rand:rnd; i,j,k:integer):boolean; override;
+     end;
+
+implementation
+
+function WorldGenPumpkin.generate(xreg,yreg:integer; map:region; rand:rnd; i,j,k:integer):boolean;
+begin
+end;
+
+end.
