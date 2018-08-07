@@ -1,0 +1,18 @@
+unit MapGenWaterlily_u;
+
+interface
+
+uses WorldGenerator_u, generation, RandomMCT;
+
+type MapGenWaterlily=class(WorldGenerator)
+     public
+       function generate(xreg,yreg:integer; map:region; rand:rnd; i,j,k:integer):boolean; override;
+     end;
+
+implementation
+
+function MapGenWaterlily.generate(xreg,yreg:integer; map:region; rand:rnd; i,j,k:integer):boolean;
+begin
+end;
+
+end.

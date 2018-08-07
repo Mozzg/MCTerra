@@ -1,0 +1,140 @@
+unit IntCache_u;
+
+interface
+
+uses generation;
+
+type ar_list = array of ar_int;
+
+var intCacheSize:integer=256;
+freeSmallArrays,inUseSmallArrays,freeLargeArrays,inUseLargeArrays:ar_list;
+
+function getIntCache(i:integer):par_int;
+procedure resetIntCache;
+
+
+implementation
+
+function getIntCache(i:integer):par_int;
+var t,t1:integer;
+begin
+  if i<=256 then
+  begin
+    if length(freeSmallArrays)=0 then
+    begin
+      t:=length(inUseSmallArrays);
+      setlength(inUseSmallArrays,t+1);
+      setlength(inUseSmallArrays[t],256);
+      result:=@inUseSmallArrays[t];
+    end
+    else
+    begin
+      t:=length(freeSmallArrays);
+      t1:=length(inUseSmallArrays);
+      setlength(inUseSmallArrays,t1+1);
+      setlength(inUseSmallArrays[t1],length(freeSmallArrays[t-1]));
+      move(freeSmallArrays[t-1][0],inUseSmallArrays[t1][0],length(freeSmallArrays[t-1])*sizeof(integer));
+      setlength(freeSmallArrays[t-1],0);
+      setlength(freeSmallArrays,t-1);
+      result:=@inUseSmallArrays[t1];
+    end;
+    exit;
+  end;
+
+  if i>intCacheSize then
+  begin
+    intCacheSize:=i;
+    for t:=0 to length(freeLargeArrays)-1 do
+      setlength(freeLargeArrays[t],0);
+    setlength(freeLargeArrays,0);
+    for t:=0 to length(inUseLargeArrays)-1 do
+      setlength(inUseLargeArrays[t],0);
+    setlength(inUseLargeArrays,0);
+    setlength(inUseLargeArrays,1);
+    setlength(inUseLargeArrays[0],intCacheSize);
+    result:=@inUseLargeArrays[0];
+    exit;
+  end;
+
+  if length(freeLargeArrays)=0 then
+  begin
+    t:=length(inUseLargeArrays);
+    setlength(inUseLargeArrays,t+1);
+    setlength(inUseLargeArrays[t],intCacheSize);
+    result:=@inUseLargeArrays[t];
+  end
+  else
+  begin
+    t:=length(freeLargeArrays);
+    t1:=length(inUseLargeArrays);
+    setlength(inUseLargeArrays,t1+1);
+    setlength(inUseLargeArrays[t1],length(freeLargeArrays[t-1]));
+    move(freeLargeArrays[t-1][0],inUseLargeArrays[t1][0],length(freeLargeArrays[t-1])*sizeof(integer));
+    setlength(freeLargeArrays[t-1],0);
+    setlength(freeLargeArrays,t-1);
+    result:=@inUseLargeArrays[t1];
+  end;
+end;
+
+procedure resetIntCache;
+var t,t1,a1,a2:integer;
+begin    
+  t:=length(freeLargeArrays);
+  if t>0 then
+  begin
+    setlength(freeLargeArrays[t-1],0);
+    setlength(freeLargeArrays,t-1);
+  end;
+  t:=length(freeSmallArrays);
+  if t>0 then
+  begin
+    setlength(freeSmallArrays[t-1],0);
+    setlength(freeSmallArrays,t-1);
+  end;
+
+  a1:=length(freeLargeArrays);
+  a2:=length(freeSmallArrays);
+
+  setlength(freeLargeArrays,a1+length(inUseLargeArrays));
+  setlength(freeSmallArrays,a2+length(inUseSmallArrays));
+
+  for t:=0 to length(inUseLargeArrays)-1 do
+  begin
+    t1:=length(inUseLargeArrays[t]);
+    setlength(freeLargeArrays[a1+t],t1);
+    move(inUseLargeArrays[t][0],freeLargeArrays[a1+t][0],t1*sizeof(integer));
+  end;
+  for t:=0 to length(inUseSmallArrays)-1 do
+  begin
+    t1:=length(inUseSmallArrays[t]);
+    setlength(freeSmallArrays[a2+t],t1);
+    move(inUseSmallArrays[t][0],freeSmallArrays[a2+t][0],t1*sizeof(integer));
+  end;
+
+  for t:=0 to length(inUseLargeArrays)-1 do
+    setlength(inUseLargeArrays[t],0);
+  setlength(inUseLargeArrays,0);
+  for t:=0 to length(inUseSmallArrays)-1 do
+    setlength(inUseSmallArrays[t],0);
+  setlength(inUseSmallArrays,0);
+end;
+
+procedure Clear_int_cache;
+var t:integer;
+begin
+  intCacheSize:=256;
+  for t:=0 to length(inUseLargeArrays)-1 do
+    setlength(inUseLargeArrays[t],0);
+  setlength(inUseLargeArrays,0);
+  for t:=0 to length(inUseSmallArrays)-1 do
+    setlength(inUseSmallArrays[t],0);
+  setlength(inUseSmallArrays,0);
+  for t:=0 to length(freeLargeArrays)-1 do
+    setlength(freeLargeArrays[t],0);
+  setlength(freeLargeArrays,0);
+  for t:=0 to length(freeSmallArrays)-1 do
+    setlength(freeSmallArrays[t],0);
+  setlength(freeSmallArrays,0);
+end;
+
+end.

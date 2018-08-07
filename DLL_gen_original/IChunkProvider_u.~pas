@@ -1,0 +1,14 @@
+unit IChunkProvider_u;
+
+interface
+
+uses generation;
+
+type IChunkProvider=class(TObject)
+     public
+       function provideChunk(abyte0:ar_byte; i,j:integer):boolean; virtual; abstract;
+     end;
+
+implementation
+
+end.
